@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using DG.Tweening;
 
 public class GameManager : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Block _blockPrefab;
     [SerializeField] private SpriteRenderer _boardPrefab;
     [SerializeField] private List<BlockType> _types;
+    [SerializeField] private float _travelTime = 0.2f;
 
     private List<Node> _nodes;
     private List<Block> _blocks;
@@ -133,9 +135,8 @@ public class GameManager : MonoBehaviour
                 }
             } while (next != block.Node);
 
-            block.transform.position = block.Node.Pos;
+            block.transform.DOMove(block.Node.Pos, _travelTime);
         }
-
     }
 
     Node GetNodeAtPosition(Vector2 pos)
