@@ -58,6 +58,18 @@ public class GameManager : MonoBehaviour
         {
             Shift(Vector2.left);
         }
+        if(Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            Shift(Vector2.right);
+        }
+        if(Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            Shift(Vector2.up);
+        }
+        if(Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            Shift(Vector2.down);
+        }
     }
     void GenerateGrid()
     {
