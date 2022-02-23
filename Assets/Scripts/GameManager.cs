@@ -16,15 +16,50 @@ public class GameManager : MonoBehaviour
 
     private List<Node> _nodes;
     private List<Block> _blocks;
+    private GameState _state;
+    private int _round;
     
     private BlockType GetBlockTypeByValue(int value) => _types.First(t => t.Value == value);
 
     private void Start()
     {
-        GenerateGrid();
+        ChangeState(GameState.GenenerateLevel);
+    }
+
+    private void ChangeState(GameState newState)
+    {
+        _state = newState;
+
+        switch (newState)
+        {
+            case GameState.GenenerateLevel:
+            GenerateGrid();
+            break;
+            case GameState.SpawningBlocks:
+            SpawnBlocks(_round++ == 0 ? 2 : 1);
+            break;
+            case GameState.WaitingInput:
+            break;
+            case GameState.Win:
+            break;
+            case GameState.Lose:
+            break;
+            default:
+            throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
+        }
+    }
+    private void Update()
+    {
+        if(_state != GameState.WaitingInput){return;}
+
+        if(Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            Shift(Vector2.left);
+        }
     }
     void GenerateGrid()
     {
+        _round = 0;
         _nodes = new List<Node>();
         _blocks = new List<Block>();
 
@@ -47,7 +82,7 @@ public class GameManager : MonoBehaviour
         Camera.main.orthographicSize = cameraSize;
         Camera.main.transform.position = new Vector3(center.x, center.y, Camera.main.transform.position.z);
 
-        SpawnBlocks(2);
+        ChangeState(GameState.SpawningBlocks);
     }
 
     void SpawnBlocks(int amount)
@@ -58,6 +93,8 @@ public class GameManager : MonoBehaviour
         {
             var block = Instantiate(_blockPrefab, node.Pos, Quaternion.identity);
             block.Init(GetBlockTypeByValue(Random.value > 0.8f ? 4 : 2));
+            block.SetBlock(node);
+            _blocks.Add(block);
         }
 
         if(freeNodes.Count() == 1)
@@ -65,12 +102,62 @@ public class GameManager : MonoBehaviour
             //lost the game
             return;
         }
+
+        ChangeState(GameState.WaitingInput);
     }
+
+    void Shift(Vector2 dir)
+    {
+        var orderedBlocks = _blocks.OrderBy(b=>b.Pos.x).ThenBy(b=>b.Pos.y).ToList();
+        
+        if(dir == Vector2.right || dir == Vector2.up)
+        {
+            orderedBlocks.Reverse();
+        }
+        
+        foreach (var block in orderedBlocks)
+        {
+            var next = block.Node;
+            do
+            {
+                block.SetBlock(next);
+                var possibleNode = GetNodeAtPosition(next.Pos + dir);
+
+                if(possibleNode != null)
+                {
+                    //Node is present
+                    if(possibleNode.OccupiedBlock == null)
+                    {
+                        next = possibleNode;
+                    }
+                }
+            } while (next != block.Node);
+
+            block.transform.position = block.Node.Pos;
+        }
+
+    }
+
+    Node GetNodeAtPosition(Vector2 pos)
+    {
+        return _nodes.FirstOrDefault(n => n.Pos == pos);
+    }
+
 }
 
 [Serializable]
-public class BlockType
+public struct BlockType
 {
     public int Value;
     public Color Color;
+}
+
+public enum GameState
+{
+    GenenerateLevel,
+    SpawningBlocks,
+    WaitingInput,
+    Moving,
+    Win,
+    Lose
 }
